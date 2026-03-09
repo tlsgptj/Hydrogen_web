@@ -186,7 +186,7 @@ export default function HydrogenStationPage() {
           src={logo}
           alt="Hying Guard"
           height={40}
-          className="h-10 w-auto ml-[100px]"
+          className="h-10 w-auto ml-[240px]"
         />
       </header>
 
@@ -201,15 +201,15 @@ export default function HydrogenStationPage() {
 
         <div className="absolute inset-0 bg-black/20" />
 
-        <div className="relative z-10 mb-10 ml-[120px]">
-          <h1 className="text-2xl md:text-[40px] font-semibold text-white tracking-tight leading-tight">
+        <div className="relative z-10 mb-10 ml-[240px]">
+          <h1 className="text-2xl md:text-[40px] font-bold text-white tracking-tight leading-tight">
             실시간 수소충전소 대기현황
           </h1>
         </div>
       </section>
 
       {/* ── 메인 콘텐츠 ── */}
-      <main className="max-w-5xl mx-auto py-8 pb-16">
+      <main className="max-w-[1518px] ml-[240px] py-8 pb-16">
 
 
           {/* 충전소 헤더 */}
@@ -235,12 +235,12 @@ export default function HydrogenStationPage() {
 
 
           {/* 대기현황 + CCTV 그리드 */}
-          <div className="grid grid-cols-[681px_498px] gap-[20px]">
+          <div className="grid grid-cols-[1000px_498px] gap-[20px]">
 
             {/* ── 대기 현황 패널 ── */}
-            <div className="w-[681px] h-[280px] bg-[#BAE3FF] p-8 flex items-center gap-7">
+            <div className="w-[921px] h-[280px] bg-[#BAE3FF] p-8 flex items-center gap-[120px]">
               <WaitGauge minutes={station.waitMinutes} />
-              <div className="flex gap-6 flex-wrap">
+              <div className="flex gap-[28px] flex-wrap">
                 <VehicleCard type="car" count={station.carCount} />
                 <VehicleCard type="bus" count={station.busCount} />
               </div>
