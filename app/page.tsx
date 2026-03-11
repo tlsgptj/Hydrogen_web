@@ -37,6 +37,7 @@ const STATION_DATA: StationData = {
   },
 };
 
+// --- CCTV 플레이어 컴포넌트 (수정됨) ---
 function CCTVPlayer({
   streamUrl,
   isLive,
@@ -45,30 +46,66 @@ function CCTVPlayer({
   isLive: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!streamUrl || !videoRef.current) return;
     const video = videoRef.current;
 
+    // 기존 인스턴스 정리 (메모리 누수 및 충돌 방지)
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
     if (Hls.isSupported()) {
-      const hls = new Hls();
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+      });
+      hlsRef.current = hls;
+
       hls.loadSource(streamUrl);
       hls.attachMedia(video);
-      hls.on(Hls.Events.ERROR, () => setError(true));
-      return () => hls.destroy();
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch((e) => console.warn("Auto-play blocked:", e));
+      });
+
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              setError(true);
+              hls.destroy();
+              break;
+          }
+        }
+      });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari 등 네이티브 지원 브라우저
       video.src = streamUrl;
     }
 
-    video.src = streamUrl;
-    video.onerror = () => setError(true);
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
   }, [streamUrl]);
 
   if (!streamUrl || error) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-[#0D1526]">
-        <span className="text-[24px] text-white md:text-[35px]">CCTV</span>
+        <span className="text-[18px] text-white md:text-[24px]">CCTV 연결 재시도 중...</span>
       </div>
     );
   }
@@ -91,20 +128,13 @@ function CCTVPlayer({
   );
 }
 
+// --- 나머지 UI 컴포넌트 (변경 없음) ---
 function WaitGauge({ minutes }: { minutes: number }) {
   return (
     <div className="relative h-[96px] w-[96px] shrink-0 md:h-[176px] md:w-[176px]">
       <svg viewBox="0 0 100 100" className="h-full w-full">
-        <circle
-          cx="50"
-          cy="50"
-          r="42"
-          fill="none"
-          stroke="#1D6FE3"
-          strokeWidth="3"
-        />
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#1D6FE3" strokeWidth="3" />
       </svg>
-
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-[18px] font-semibold text-[#1D6FE3] md:text-[36px]">
           {minutes}분
@@ -124,7 +154,6 @@ function VehicleCard({ type, count }: { type: "car" | "bus"; count: number }) {
         height={62}
         className="h-auto w-[88px] object-contain md:w-[176px]"
       />
-
       <span className="mt-1 text-[18px] font-semibold text-[#1D6FE3] md:mt-3 md:text-[36px]">
         {count}대
       </span>
@@ -132,33 +161,21 @@ function VehicleCard({ type, count }: { type: "car" | "bus"; count: number }) {
   );
 }
 
+// --- 메인 페이지 ---
 export default function HydrogenStationPage() {
   const [station] = useState<StationData>(STATION_DATA);
 
   return (
     <div className="min-h-screen bg-[#F4F7FB] font-sans text-gray-900">
-      {/* 헤더 */}
       <header className="sticky top-0 z-50 flex h-[56px] items-center border-b border-slate-200 bg-white px-4 shadow-sm md:h-[64px] md:px-8">
         <div className="mx-auto flex w-full max-w-[1518px] items-center">
-          <Image
-            src={logo}
-            alt="Hying Guard"
-            height={40}
-            className="h-7 w-auto md:h-10"
-          />
+          <Image src={logo} alt="Hying Guard" height={40} className="h-7 w-auto md:h-10" />
         </div>
       </header>
 
-      {/* 히어로 */}
       <section className="relative flex h-[96px] w-full items-center overflow-hidden px-4 md:h-[300px] md:items-end md:px-10 md:pb-20">
-        <Image
-          src={background}
-          alt="배경 이미지"
-          fill
-          className="object-cover object-center"
-        />
+        <Image src={background} alt="배경 이미지" fill className="object-cover object-center" />
         <div className="absolute inset-0 bg-black/20" />
-
         <div className="relative z-10 mx-auto w-full max-w-[1518px] md:mb-10">
           <h1 className="text-[18px] font-bold leading-tight tracking-tight text-white md:text-[40px]">
             실시간 수소충전소 대기현황
@@ -166,53 +183,29 @@ export default function HydrogenStationPage() {
         </div>
       </section>
 
-      {/* 메인 콘텐츠 */}
       <main className="mx-auto w-full max-w-[1518px] px-4 py-5 pb-10 md:py-8 md:pb-16">
         <div>
-          {/* 충전소 헤더 */}
           <div className="flex items-center gap-3 border-b border-slate-100 py-4 md:px-6 md:py-5">
-            <div className="relative shrink-0">
-              <Image
-                src={H2}
-                alt="충전소 아이콘"
-                width={80}
-                height={87}
-                className="h-[60px] w-[52px] object-contain md:h-[87px] md:w-[80px]"
-              />
-            </div>
-
-            <span className="text-[18px] font-bold tracking-tight text-slate-900 md:text-[30px]">
-              {station.name}
-            </span>
+            <Image src={H2} alt="충전소 아이콘" width={80} height={87} className="h-[60px] w-[52px] md:h-[87px] md:w-[80px]" />
+            <span className="text-[18px] font-bold text-slate-900 md:text-[30px]">{station.name}</span>
           </div>
 
-          {/* 대기현황 + CCTV */}
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[921px_498px] md:gap-[20px]">
-            {/* 대기 현황 패널 */}
-            <div className="flex min-h-[143px] w-full items-center justify-between bg-[#BAE3FF] px-4 py-5 md:h-[280px] md:w-[921px] md:justify-start md:pl-[120px] md:pr-8 md:py-8 md:gap-[109px]">
+            <div className="flex min-h-[143px] w-full items-center justify-between bg-[#BAE3FF] px-4 py-5 md:h-[280px] md:justify-start md:pl-[120px] md:pr-8 md:gap-[109px]">
               <WaitGauge minutes={station.waitMinutes} />
-
-              <div className="flex gap-[20px] md:gap-[20px]">
+              <div className="flex gap-[20px]">
                 <VehicleCard type="car" count={station.carCount} />
                 <VehicleCard type="bus" count={station.busCount} />
               </div>
             </div>
 
-            {/* CCTV 패널 */}
-            <div className="h-[200px] w-full bg-[#0A0F1E] md:h-[280px] md:w-[498px]">
-              <CCTVPlayer
-                streamUrl={station.cctv.streamUrl}
-                isLive={station.cctv.isLive}
-              />
+            <div className="h-[200px] w-full bg-[#0A0F1E] md:h-[280px]">
+              <CCTVPlayer streamUrl={station.cctv.streamUrl} isLive={station.cctv.isLive} />
             </div>
           </div>
 
-          {/* 운영시간 안내 */}
           <div className="px-0 py-4 text-[14px] text-slate-500 md:px-6 md:py-3.5 md:text-[24px]">
-            <span className="text-slate-700">{station.name}</span>
-            <span> 운영시간은 </span>
-            <strong className="text-blue-700">{station.operatingHours}</strong>
-            <span>입니다.</span>
+            <span className="text-slate-700">{station.name}</span> 운영시간은 <strong className="text-blue-700">{station.operatingHours}</strong> 입니다.
           </div>
         </div>
       </main>
