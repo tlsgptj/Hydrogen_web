@@ -32,7 +32,7 @@ const STATION_DATA: StationData = {
   operatingHours: "09:00 ~ 20:00",
   isOpen: true,
   cctv: {
-    streamUrl: "rtsp://admin:%40%40admin7434@192.168.1.11:554/0/onvif/profile1/media.smp",
+    streamUrl: "http://localhost:8889/hydrogen_cam",
     isLive: false,
   },
 };
