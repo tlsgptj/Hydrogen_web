@@ -32,7 +32,7 @@ const STATION_DATA: StationData = {
   operatingHours: "09:00 ~ 20:00",
   isOpen: true,
   cctv: {
-    streamUrl: "https://water-posted-society-jury.trycloudflare.com/hydrogen_cam/index.m3u8",
+    streamUrl: "https://cctv.hydrogen-cctv.com/hydrogen_cam/index.m3u8",
     isLive: false,
   },
 };
