@@ -37,7 +37,7 @@ const DEFAULT_STATION_DATA: StationData = {
   waitMinutes: 0,
   carCount: 0,
   busCount: 0,
-  operatingHours: "09:00 ~ 20:00",
+  operatingHours: "06:00 ~ 20:30",
   isOpen: true,
   cctv: {
     streamUrl: "https://cctv.hydrogen-cctv.com/hydrogen_cam/index.m3u8",
