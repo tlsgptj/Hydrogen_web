@@ -49,7 +49,7 @@ function calculateWaitMinutes(cars: number, trucks: number) {
   // 예시 로직:
   // 승용차 1대 = 5분
   // 대형차(버스/트럭) 1대 = 10분
-  return cars * 5 + trucks * 10;
+  return cars * 30 + trucks * 60;
 }
 
 // --- CCTV 플레이어 컴포넌트 ---
