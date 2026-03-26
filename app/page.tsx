@@ -46,9 +46,6 @@ const DEFAULT_STATION_DATA: StationData = {
 };
 
 function calculateWaitMinutes(cars: number, trucks: number) {
-  // 예시 로직:
-  // 승용차 1대 = 5분
-  // 대형차(버스/트럭) 1대 = 10분
   return cars * 30 + trucks * 60;
 }
 
@@ -208,7 +205,7 @@ export default function HydrogenStationPage() {
 
       setStation((prev) => ({
         ...prev,
-        waitMinutes: data.cars * 5 + data.trucks * 10,
+        waitMinutes: data.cars * 30 + data.trucks * 60,
         carCount: data.cars,
         busCount: data.trucks,
         cctv: {
