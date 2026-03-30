@@ -188,6 +188,7 @@ export default function HydrogenStationPage() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const prevCountsRef = useRef<{ cars: number; trucks: number } | null>(null);
 
   useEffect(() => {
   const fetchVehicleCount = async () => {
@@ -202,17 +203,31 @@ export default function HydrogenStationPage() {
       }
 
       const data = await response.json();
+      const newWaitMinutes = calculateWaitMinutes(data.cars, data.trucks);
+      const prevCounts = prevCountsRef.current;
 
-      setStation((prev) => ({
-        ...prev,
-        waitMinutes: data.cars * 30 + data.trucks * 60,
-        carCount: data.cars,
-        busCount: data.trucks,
-        cctv: {
-          ...prev.cctv,
-          isLive: true,
-        },
-      }));
+      setStation((prev) => {
+        const isSameCounts =
+          prevCounts &&
+          prevCounts.cars === data.cars &&
+          prevCounts.trucks === data.trucks;
+
+        return {
+          ...prev,
+          waitMinutes: isSameCounts ? prev.waitMinutes : newWaitMinutes,
+          carCount: data.cars,
+          busCount: data.trucks,
+          cctv: {
+            ...prev.cctv,
+            isLive: true,
+          },
+        };
+      });
+
+      prevCountsRef.current = {
+        cars: data.cars,
+        trucks: data.trucks,
+      };
 
       setLastUpdated(data.timestamp);
       setApiError(false);
