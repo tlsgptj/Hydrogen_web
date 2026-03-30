@@ -46,7 +46,7 @@ const DEFAULT_STATION_DATA: StationData = {
 };
 
 function calculateWaitMinutes(cars: number, heavyVehicles: number) {
-  return cars * 30 + heavyVehicles * 60;
+  return cars * 20 + heavyVehicles * 60;
 }
 
 // --- CCTV 플레이어 컴포넌트 ---
