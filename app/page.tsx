@@ -231,6 +231,17 @@ export default function HydrogenStationPage() {
   return () => clearInterval(intervalId);
 }, []);
 
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      setStation((prev) => ({
+        ...prev,
+        waitMinutes: Math.max(prev.waitMinutes - 1, 0),
+      }));
+    }, 60000);
+
+    return () => clearInterval(timerId);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#F4F7FB] font-sans text-gray-900">
       <header className="sticky top-0 z-50 flex h-[56px] items-center border-b border-slate-200 bg-white px-4 shadow-sm md:h-[64px] md:px-8">
