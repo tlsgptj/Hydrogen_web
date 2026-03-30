@@ -202,7 +202,7 @@ export default function HydrogenStationPage() {
         throw new Error(`API 요청 실패: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: VehicleCountApiResponse = await response.json();
       const newWaitMinutes = calculateWaitMinutes(data.cars, data.heavyVehicles);
       const prevCounts = prevCountsRef.current;
 
