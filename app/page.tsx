@@ -28,7 +28,7 @@ interface VehicleCountApiResponse {
   timestamp: string;
   totalVehicles: number;
   cars: number;
-  trucks: number;
+  heavyVehicles: number;
 }
 
 const DEFAULT_STATION_DATA: StationData = {
@@ -45,8 +45,8 @@ const DEFAULT_STATION_DATA: StationData = {
   },
 };
 
-function calculateWaitMinutes(cars: number, trucks: number) {
-  return cars * 30 + trucks * 60;
+function calculateWaitMinutes(cars: number, heavyVehicles: number) {
+  return cars * 30 + heavyVehicles * 60;
 }
 
 // --- CCTV 플레이어 컴포넌트 ---
@@ -188,7 +188,7 @@ export default function HydrogenStationPage() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const prevCountsRef = useRef<{ cars: number; trucks: number } | null>(null);
+  const prevCountsRef = useRef<{ cars: number; heavyVehicles: number } | null>(null);
 
   useEffect(() => {
   const fetchVehicleCount = async () => {
@@ -203,20 +203,20 @@ export default function HydrogenStationPage() {
       }
 
       const data = await response.json();
-      const newWaitMinutes = calculateWaitMinutes(data.cars, data.trucks);
+      const newWaitMinutes = calculateWaitMinutes(data.cars, data.heavyVehicles);
       const prevCounts = prevCountsRef.current;
 
       setStation((prev) => {
         const isSameCounts =
           prevCounts &&
           prevCounts.cars === data.cars &&
-          prevCounts.trucks === data.trucks;
+          prevCounts.heavyVehicles === data.heavyVehicles;
 
         return {
           ...prev,
           waitMinutes: isSameCounts ? prev.waitMinutes : newWaitMinutes,
           carCount: data.cars,
-          busCount: data.trucks,
+          busCount: data.heavyVehicles,
           cctv: {
             ...prev.cctv,
             isLive: true,
@@ -226,7 +226,7 @@ export default function HydrogenStationPage() {
 
       prevCountsRef.current = {
         cars: data.cars,
-        trucks: data.trucks,
+        heavyVehicles: data.heavyVehicles,
       };
 
       setLastUpdated(data.timestamp);
