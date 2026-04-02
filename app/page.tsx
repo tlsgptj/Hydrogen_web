@@ -25,7 +25,7 @@ interface StationData {
 
 interface VehicleCountApiResponse {
   cameraId: string;
-  timestamp: string;
+  WaitingTime: string; // 예: "00:19"
   totalVehicles: number;
   cars: number;
   heavyVehicles: number;
@@ -45,8 +45,13 @@ const DEFAULT_STATION_DATA: StationData = {
   },
 };
 
-function calculateWaitMinutes(cars: number, heavyVehicles: number) {
-  return cars * 20 + heavyVehicles * 60;
+function parseWaitingTimeToMinutes(waitingTime: string) {
+  const [mm = "0", ss = "0"] = waitingTime.split(":");
+  const minutes = parseInt(mm, 10) || 0;
+  const seconds = parseInt(ss, 10) || 0;
+
+  // 초가 있으면 사용자 화면에서는 올림 처리
+  return seconds > 0 ? minutes + 1 : minutes;
 }
 
 // --- CCTV 플레이어 컴포넌트 ---
@@ -70,7 +75,6 @@ function CCTVPlayer({
       hlsRef.current = null;
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(false);
 
     if (Hls.isSupported()) {
@@ -188,73 +192,48 @@ export default function HydrogenStationPage() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const prevCountsRef = useRef<{ cars: number; heavyVehicles: number } | null>(null);
 
   useEffect(() => {
-  const fetchVehicleCount = async () => {
-    try {
-      const response = await fetch("/api/vehicle-count", {
-        method: "GET",
-        cache: "no-store",
-      });
+    const fetchVehicleCount = async () => {
+      try {
+        const response = await fetch("/api/vehicle-count", {
+          method: "GET",
+          cache: "no-store",
+        });
 
-      if (!response.ok) {
-        throw new Error(`API 요청 실패: ${response.status}`);
-      }
+        if (!response.ok) {
+          throw new Error(`API 요청 실패: ${response.status}`);
+        }
 
-      const data: VehicleCountApiResponse = await response.json();
-      const newWaitMinutes = calculateWaitMinutes(data.cars, data.heavyVehicles);
-      const prevCounts = prevCountsRef.current;
+        const data: VehicleCountApiResponse = await response.json();
+        const newWaitMinutes = parseWaitingTimeToMinutes(data.WaitingTime);
 
-      setStation((prev) => {
-        const isSameCounts =
-          prevCounts &&
-          prevCounts.cars === data.cars &&
-          prevCounts.heavyVehicles === data.heavyVehicles;
-
-        return {
+        setStation((prev) => ({
           ...prev,
-          waitMinutes: isSameCounts ? prev.waitMinutes : newWaitMinutes,
+          waitMinutes: newWaitMinutes,
           carCount: data.cars,
           busCount: data.heavyVehicles,
           cctv: {
             ...prev.cctv,
             isLive: true,
           },
-        };
-      });
+        }));
 
-      prevCountsRef.current = {
-        cars: data.cars,
-        heavyVehicles: data.heavyVehicles,
-      };
+        setLastUpdated(data.WaitingTime);
+        setApiError(false);
+      } catch (error) {
+        console.error("vehicle-count fetch error:", error);
+        setApiError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      setLastUpdated(data.timestamp);
-      setApiError(false);
-    } catch (error) {
-      console.error("vehicle-count fetch error:", error);
-      setApiError(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchVehicleCount();
 
-  fetchVehicleCount();
+    const intervalId = setInterval(fetchVehicleCount, 5000);
 
-  const intervalId = setInterval(fetchVehicleCount, 5000);
-
-  return () => clearInterval(intervalId);
-}, []);
-
-  useEffect(() => {
-    const timerId = setInterval(() => {
-      setStation((prev) => ({
-        ...prev,
-        waitMinutes: Math.max(prev.waitMinutes - 1, 0),
-      }));
-    }, 60000);
-
-    return () => clearInterval(timerId);
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
@@ -325,6 +304,9 @@ export default function HydrogenStationPage() {
           <div className="px-0 text-[13px] text-slate-500 md:px-6 md:text-[16px]">
             {loading && <p>대기정보 불러오는 중...</p>}
             {apiError && <p className="text-red-500">대기정보를 불러오지 못했습니다.</p>}
+            {!loading && !apiError && lastUpdated && (
+              <p>현재 대기시간: {lastUpdated}</p>
+            )}
           </div>
         </div>
       </main>
