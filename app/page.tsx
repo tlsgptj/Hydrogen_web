@@ -304,9 +304,6 @@ export default function HydrogenStationPage() {
           <div className="px-0 text-[13px] text-slate-500 md:px-6 md:text-[16px]">
             {loading && <p>대기정보 불러오는 중...</p>}
             {apiError && <p className="text-red-500">대기정보를 불러오지 못했습니다.</p>}
-            {!loading && !apiError && lastUpdated && (
-              <p>현재 대기시간: {lastUpdated}</p>
-            )}
           </div>
         </div>
       </main>
